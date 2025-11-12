@@ -1,0 +1,36 @@
+nb de vie limité
+3 niveaux difficulté croissante
+pour gagner la partie le joueur doit gagner les 3 niveaux
+il perd un niveau il perd une vie
+---------------------------------------
+5 types "d'item" (ici F, O, M, R, C)
+le jeu est représenté par un tableau a 2 dimensions de 25 lignes x 45 colones
+au debut les cases du tableau sont remplies aléatoirement avec les items
+Mais les bonus ne doivent pas spawn dé le debuts
+annoncer contrat au debut.
+contrat = nombre fixe d'item a eliminer(a definir) en un nb max de coup (a definir) et en un temps limité(a determiner).
+contact de + en + dures.
+--------------GAMEPLAY--BONUS---------------
+Une suite horizontale ou verticale de 6 items X --> destruction de tous les items X du tableau meme s'il sont isolé.
+
+Une suite horizontale ou verticale de 4 items X --> destruction de tous les items X de la suite.
+
+Une croix de 9 items X (2 au dessus, 2 a droite, 2 a gauche, 2 en bas, 1 au milieux) --> destruction de tous les items X de la meme ligne et meme colonne.
+
+Un carré de 4X4 items X --> destruction de tous les items X contenue dans le carré.
+-------------------Mechanisme-----------------------
+les items detruits sont remplacé par ceux du dessus laisse place a une reaction en chaine.
+
+Le joueur peut selectionner ou deselectionner les items, chaque deplacement compte pour 1 coup.
+-----------------Fin-de-niveau----------------------
+Echec:Conditions atteintes (nb de coups atteint, temps ecoulé) ET le joueur n'a pas rempli le contrat. -1 vie, si vie>0 alors il peut retenter.
+Victoire:Condition atteintes ET le joueur a rempli le contrat.
+
+-----------------Fin-de-partie----------------------
+Echec: vie == 0 ET joueur na pas gagné les niveaux
+Victoire: joueur a gagné les niveaux
+dans les 2 cas on réaffiche le menu
+--------------------Sauvegarde--------------------
+save dans un fichier .txt 
+joueur doit indiquer un pseudo dispo
+au lancement du prgm, il peut charger sa sauvegarde en indiquant son pseudo.
