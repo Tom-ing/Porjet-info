@@ -18,9 +18,9 @@ void genererNiveau(Partie* partie, int niveau) {
 
     // Initialiser le contrat
     for (int i = 0; i < NB_TYPES_ITEMS; i++) {
-        // On baisse le score pour que ce soit plus facile
-        partie->contrat[i] = 10 + (niveau * 5); // <-- 10 au lieu de 20
-        partie->elimines[i] = 0;
+        partie->contrat[i] = 10 + (niveau * 5);// par exemple au niveau 1 seulement 15 items par types d'items est
+                                                 //demandé pour remplir le contrat
+        partie->elimines[i] = 0;//on s'assure que le joureur commence  avec 0 items éliminé
     }
 
     remplirTableauAleatoire(partie->tableau);
@@ -49,7 +49,7 @@ int estAdjacent(int y1, int x1, int y2, int x2) {
 // Retourne 1 si la permutation a lieu, 0 sinon
 int permuterItems(Partie* partie, int y1, int x1, int y2, int x2) {
     if (!estAdjacent(y1, x1, y2, x2)) {
-        return 0; // Ne permute pas s'ils ne sont pas adjacents
+        return 0; // Ne permute pas si il ne sont pas à coté
     }
 
     // Logique de permutation
@@ -254,21 +254,8 @@ int detecterEtEliminerMatchs(Partie* partie) {
 void gererMatchsEtCascades(Partie* partie) {
     // Boucle "Jusqu'à stabilisation"
     while (detecterEtEliminerMatchs(partie) > 0) {
-        // On a trouvé des matchs
-
-        // 1. Appliquer la gravité
-        appliquerGravite(partie);
-
-        // 2. Remplir les cases vides
-        remplirCasesVides(partie);
-
-        // 3. La boucle 'while' va re-vérifier si les
-        //    nouveaux items ont créé de nouveaux matchs.
-
-        // (Pour voir la cascade, il faudrait rafraîchir
-        // l'affichage et mettre un 'Sleep' ici, mais
-        // c'est plus complexe. Pour l'instant, le calcul
-        // se fait d'un coup.)
+        appliquerGravite(partie);// Appliquer la gravité
+        remplirCasesVides(partie);// Remplir les cases vides
     }
 }
 
