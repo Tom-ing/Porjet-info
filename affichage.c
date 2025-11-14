@@ -1,10 +1,3 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- * FICHIER: affichage.c
- * Description: Module d'affichage - Implémentation
- * ════════════════════════════════════════════════════════════════════════════
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +27,7 @@ void effacerEcran(void) {
 void afficherMenuPrincipal(void) {
     effacerEcran();
     
-    changerCouleur(COULEUR_VIOLET);
+    changerCouleur(COULEUR_VERT);
     printf("\n");
     printf("    ╔══════════════════════════════════════════════════════════╗\n");
     printf("    ║                                                          ║\n");
@@ -187,101 +180,133 @@ void afficherRegles(void) {
 }
 
 // Affiche l'écran de jeu complet
-// Affiche l'écran de jeu complet (VERSION NON-CENTRÉE QUI MARCHE)
 void afficherNiveauJeu(Partie* partie, int curseurX, int curseurY, int selectX, int selectY) {
     effacerEcran();
 
-    // En-tête
+    // --- 1. Titre ---
+    // (On le garde simple, en haut)
     changerCouleur(COULEUR_VERT);
     printf("╔════════════════════════════════════════════════════════════════════════════════════╗\n");
     printf("║");
     changerCouleur(COULEUR_JAUNE);
-    // On laisse la largeur d'origine
-    printf("                              ECE HEROES - NIVEAU %d                                 ", partie->niveau);
+    printf("                                ECE HEROES - NIVEAU %d                               ", partie->niveau);
     changerCouleur(COULEUR_VERT);
     printf("║\n");
     printf("╚════════════════════════════════════════════════════════════════════════════════════╝\n\n");
 
-    // Début de la zone de jeu
-    printf("  ");
-    changerCouleur(COULEUR_JAUNE);
-    // On laisse la largeur d'origine
-    printf("┌──────────────────────────────────────────────────────────┐\n");
 
-    // Affichage du plateau
-    afficherPlateau(partie, curseurX, curseurY, selectX, selectY);
+    // --- 2. Définition du Layout ---
+    int plateauX = 3;  // Marge gauche
+    int plateauY = 5;  // Sous le titre
 
-    printf("  ");
-    changerCouleur(COULEUR_JAUNE);
-    printf("└──────────────────────────────────────────────────────────┘\n\n");
+    // HAUTEUR = 20. LARGEUR = 20.
+    // Chaque item fait 4 chars (" %-2s ")
+    int hauteurPlateau = HAUTEUR + 2; // 20 items + 2 bordures
+    int largeurPlateau = (LARGEUR * 4) + 2; // (20 * 4) + 2 = 82
 
-    // Affiche les stats (qui vont se placer en dur)
-    afficherStats(partie);
+    // Le HUD (Stats) se place à droite du plateau
+    int statsX = plateauX + largeurPlateau + 3; // 3 espaces
+    int statsY = plateauY;
 
-    afficherControles();
-    afficherLegende();
+    // Les contrôles se placent SOUS le plateau
+    int controlesY = plateauY + hauteurPlateau + 2; // 2 lignes sous le plateau
+    int controlesX = plateauX;
+
+    // La légende se place SOUS les contrôles
+    int legendeY = controlesY + 5; // 5 lignes pour les contrôles
+    int legendeX = plateauX;
+
+    // --- 3. Dessin des éléments ---
+    afficherPlateau(partie, curseurX, curseurY, selectX, selectY, plateauX, plateauY);
+    afficherStats(partie, statsX, statsY);
+    afficherControles(controlesX, controlesY);
+    afficherLegende(legendeX, legendeY);
 
     changerCouleur(COULEUR_RESET);
 }
 
-// Affiche le plateau de jeu (VERSION NON-CENTRÉE QUI MARCHE)
-void afficherPlateau(Partie* partie, int curseurX, int curseurY, int selectX, int selectY) {
+// Affiche le plateau de jeu (AVEC "BEAU CONTOUR" et positionné)
+void afficherPlateau(Partie* partie, int curseurX, int curseurY, int selectX, int selectY, int startX, int startY) {
     int tableau[HAUTEUR][LARGEUR];
-    // Attention : #include <string.h> doit être en haut de affichage.c
     memcpy(tableau, partie->tableau, sizeof(partie->tableau));
 
-    char symboles[] = {' ', 'F', 'O', 'M', 'R', 'C'};
+    // Symboles (ajustez si vous utilisez "F", "O", etc.)
+    char* symboles[] = {" ", "🍓", "🧅", "🍊", "🍇", "🥕"};
     int couleurs[] = {COULEUR_RESET, COULEUR_ROUGE, COULEUR_VIOLET,
                       COULEUR_ORANGE, COULEUR_VIOLET, COULEUR_ORANGE};
 
-    // Affichage simplifié (12 lignes x 20 colonnes pour la démo)
-    for (int i = 0; i < 12; i++) {
-        printf("  "); // Positionnement simple
-        changerCouleur(COULEUR_JAUNE);
-        printf("│ ");
+    int H = HAUTEUR; // 20
+    int L = LARGEUR; // 20
+    int itemWidth = 4; // Largeur de " %-2s "
 
-        for (int j = 0; j < 20; j++) {
+    // --- 1. Dessin du Contour ---
+    changerCouleur(COULEUR_JAUNE);
+
+    // Coin HAUT-GAUCHE
+    allerA(startX, startY);
+    printf("╔");
+
+    // Ligne HAUT (Largeur = 20 items * 4 chars)
+    for (int j = 0; j < (L * itemWidth); j++) printf("═");
+
+    // Coin HAUT-DROITE
+    printf("╗");
+
+    // Côtés GAUCHE et DROITE
+    for (int i = 0; i < H; i++) {
+        allerA(startX, startY + 1 + i);
+        printf("║"); // Côté gauche
+        allerA(startX + (L * itemWidth) + 1, startY + 1 + i);
+        printf("║"); // Côté droite
+    }
+
+    // Coin BAS-GAUCHE
+    allerA(startX, startY + H + 1);
+    printf("╚");
+
+    // Ligne BAS
+    for (int j = 0; j < (L * itemWidth); j++) printf("═");
+
+    // Coin BAS-DROITE
+    printf("╝");
+
+    // --- 2. Dessin des Items ---
+    for (int i = 0; i < H; i++) {
+        // Se positionne pour la ligne
+        allerA(startX + 1, startY + 1 + i);
+
+        for (int j = 0; j < L; j++) {
             int item = tableau[i][j];
+            char* s = symboles[item]; // Symbole (ex: "🍓")
 
-            // Curseur actuel
+            // On force une largeur de 4 pour chaque case
             if (i == curseurY && j == curseurX) {
-                changerCouleur(COULEUR_BLANC);
-                printf("[");
-                changerCouleur(couleurs[item]);
-                printf("%c", symboles[item]);
-                changerCouleur(COULEUR_BLANC);
-                printf("]");
+                changerCouleur(COULEUR_BLANC); printf("[");
+                changerCouleur(couleurs[item]); printf("%-2s", s); // 2 chars pour le symbole
+                changerCouleur(COULEUR_BLANC); printf("]");
             }
-            // Item sélectionné
             else if (i == selectY && j == selectX) {
-                changerCouleur(COULEUR_JAUNE);
-                printf("{");
-                changerCouleur(couleurs[item]);
-                printf("%c", symboles[item]);
-                changerCouleur(COULEUR_JAUNE);
-                printf("}");
+                changerCouleur(COULEUR_JAUNE); printf("{");
+                changerCouleur(couleurs[item]); printf("%-2s", s);
+                changerCouleur(COULEUR_JAUNE); printf("}");
             }
-            // Item normal
             else {
                 changerCouleur(couleurs[item]);
-                printf(" %c ", symboles[item]);
+                printf(" %-2s ", s);
             }
         }
-
-        changerCouleur(COULEUR_JAUNE);
-        printf(" │\n");
     }
 }
 
-// ... (afficherControles, afficherLegende) ...
+// Affiche les statistiques (Pour correspondre au rafraîchissement)
+void afficherStats(Partie* partie, int startX, int startY) {
+    // Les positions sont maintenant passées en paramètre
+    int posX = startX;
+    int posY = startY;
 
-// Affiche les statistiques (VERSION NON-CENTRÉE QUI MARCHE)
-void afficherStats(Partie* partie) {
-    // Positionne les stats à droite (en dur)
-    int posX = 65;
-    int posY = 4;
-
-    allerA(posX, posY++);
+    // Le reste de la fonction est IDENTIQUE, car
+    // elle utilise déjà allerA()
+    allerA(posX, posY++); // posY = 4 (ou 5, selon startY)
     changerCouleur(COULEUR_JAUNE);
     printf("╔═════════════════════╗");
 
@@ -294,19 +319,17 @@ void afficherStats(Partie* partie) {
     changerCouleur(COULEUR_JAUNE);
     printf("        ║");
 
-    allerA(posX, posY++);
-    printf("╠═════════════════════╣");
-
-    allerA(posX, posY++);
+    allerA(posX, posY++); // posY = 6
     printf("║");
     changerCouleur(COULEUR_BLANC);
     printf(" TEMPS : ");
     changerCouleur(COULEUR_CYAN);
+    // CORRECTION : On s'assure d'utiliser %02d ici aussi
     printf("%02d:%02d", partie->temps_restant / 60, partie->temps_restant % 60);
     changerCouleur(COULEUR_JAUNE);
     printf("       ║");
 
-    allerA(posX, posY++);
+    allerA(posX, posY++); // posY = 7
     printf("║");
     changerCouleur(COULEUR_BLANC);
     printf(" COUPS : ");
@@ -315,34 +338,35 @@ void afficherStats(Partie* partie) {
     changerCouleur(COULEUR_JAUNE);
     printf("         ║");
 
-    allerA(posX, posY++);
+    // ... (Le reste de la fonction est correct) ...
+
+    allerA(posX, posY++); // posY = 8
     printf("╠═════════════════════╣");
 
-    allerA(posX, posY++);
+    allerA(posX, posY++); // posY = 9
     printf("║");
     changerCouleur(COULEUR_VERT);
-    printf("     CONTRAT     ");
+    printf("       CONTRAT     ");
     changerCouleur(COULEUR_JAUNE);
-    printf("    ║");
+    printf("  ║");
 
-    allerA(posX, posY++);
+    allerA(posX, posY++); // posY = 10
     printf("╠═════════════════════╣");
 
-    // Symboles (doivent correspondre à afficherPlateau)
-    char symboles[] = {' ', 'F', 'O', 'M', 'R', 'C'};
+    char* symboles[] = {" ", "🍓", "🧅", "🍊", "🍇", "🥕"};
 
     for (int i = 0; i < NB_TYPES_ITEMS; i++) {
         allerA(posX, posY++);
         printf("║   ");
         changerCouleur(COULEUR_BLANC);
 
-        printf("[%c]  %3d / %-3d",
+        printf("[%s]  %3d / %-3d",
                symboles[i+1],
                partie->elimines[i],
                partie->contrat[i]);
 
         changerCouleur(COULEUR_JAUNE);
-        printf("    ║");
+        printf("   ║");
     }
 
     allerA(posX, posY++);
@@ -351,68 +375,73 @@ void afficherStats(Partie* partie) {
     changerCouleur(COULEUR_RESET);
 }
 
-// Affiche les contrôles
-void afficherControles(void) {
+// Affiche les contrôles (Positionnable)
+void afficherControles(int startX, int startY) {
+    int X = startX;
+    int Y = startY;
+    // On prend la largeur du plateau (82)
+    int W = (LARGEUR * 4) + 2;
+
     changerCouleur(COULEUR_VERT);
-    printf(" \n  ╔════════════════════════════════════════════════════════════════════════════════════╗\n");
-    printf("  ║ ");
-    changerCouleur(COULEUR_JAUNE);
-    printf("CONTRÔLES");
+
+    allerA(X, Y++);
+    printf("╔");
+    for (int j = 0; j < W - 2; j++) printf("═");
+    printf("╗");
+
+    allerA(X, Y++);
+    printf("║ ");
+    changerCouleur(COULEUR_JAUNE); printf("CONTRÔLES");
     changerCouleur(COULEUR_VERT);
-    printf("                                                                          ║\n");
-    printf("  ║ ");
-    changerCouleur(COULEUR_BLANC);
-    printf("Déplacement: ");
-    changerCouleur(COULEUR_CYAN);
-    printf("[Z/Q/S/D]");
-    changerCouleur(COULEUR_BLANC);
-    printf(" ou ");
-    changerCouleur(COULEUR_CYAN);
-    printf("[Flèches]");
-    changerCouleur(COULEUR_BLANC);
-    printf("  │  Sélection: ");
-    changerCouleur(COULEUR_CYAN);
-    printf("[ESPACE]");
-    changerCouleur(COULEUR_BLANC);
-    printf("  │  Quitter: ");
-    changerCouleur(COULEUR_CYAN);
-    printf("[ECHAP]");
-    changerCouleur(COULEUR_VERT);
-    printf("   ║\n");
-    printf("  ╚════════════════════════════════════════════════════════════════════════════════════╝\n\n");
+    allerA(X + W - 1, Y - 1); printf("║"); // Bordure droite
+
+    allerA(X, Y++);
+    printf("║ ");
+    changerCouleur(COULEUR_BLANC); printf("Déplacement: ");
+    changerCouleur(COULEUR_CYAN); printf("[Z/Q/S/D]");
+    changerCouleur(COULEUR_BLANC); printf(" ou ");
+    changerCouleur(COULEUR_CYAN); printf("[Flèches]");
+    changerCouleur(COULEUR_BLANC); printf("  │  Sélection: ");
+    changerCouleur(COULEUR_CYAN); printf("[ESPACE]");
+    changerCouleur(COULEUR_BLANC); printf("  │  Quitter: ");
+    changerCouleur(COULEUR_CYAN); printf("[ECHAP]");
+    allerA(X + W - 1, Y - 1); changerCouleur(COULEUR_VERT); printf("║"); // Bordure droite
+
+    allerA(X, Y++);
+    printf("╚");
+    for (int j = 0; j < W - 2; j++) printf("═");
+    printf("╝");
 }
 
-// Affiche la légende
-void afficherLegende(void) {
+// Affiche la légende (Positionnable)
+void afficherLegende(int startX, int startY) {
+    allerA(startX, startY); // Se positionne
+
     changerCouleur(COULEUR_BLANC);
-    printf("  Légende: ");
-    changerCouleur(COULEUR_ROUGE);
-    printf("[F]");
-    changerCouleur(COULEUR_BLANC);
-    printf("=Fraise  ");
-    changerCouleur(COULEUR_VIOLET);
-    printf("[O]");
-    changerCouleur(COULEUR_BLANC);
-    printf("=Oignon  ");
-    changerCouleur(COULEUR_ORANGE);
-    printf("[M]");
-    changerCouleur(COULEUR_BLANC);
-    printf("=Mandarine  ");
-    changerCouleur(COULEUR_VIOLET);
-    printf("[R]");
-    changerCouleur(COULEUR_BLANC);
-    printf("=Raisin  ");
-    changerCouleur(COULEUR_ORANGE);
-    printf("[C]");
-    changerCouleur(COULEUR_BLANC);
-    printf("=Carotte\n");
+    printf("Légende: ");
+
+    changerCouleur(COULEUR_ROUGE); printf("[🍓]");
+    changerCouleur(COULEUR_BLANC); printf("=Fraise  ");
+
+    changerCouleur(COULEUR_JAUNE); printf("[🧅]");
+    changerCouleur(COULEUR_BLANC); printf("=Oignon  ");
+
+    changerCouleur(COULEUR_ORANGE); printf("[🍊]");
+    changerCouleur(COULEUR_BLANC); printf("=Mandarine  ");
+
+    changerCouleur(COULEUR_VIOLET); printf("[🍇]");
+    changerCouleur(COULEUR_BLANC); printf("=Raisin  ");
+
+    changerCouleur(COULEUR_ORANGE); printf("[🥕]");
+    changerCouleur(COULEUR_BLANC); printf("=Carotte");
 }
+
 // Affiche un message de victoire
 void afficherVictoire(void) {
     changerCouleur(COULEUR_VERT);
     printf("\n\n");
     printf("    ╔══════════════════════════════════════════════════════════╗\n");
-    printf("    ║                  NIVEAU RÉUSSI !                         ║\n");
+    printf("    ║                     NIVEAU RÉUSSI !                      ║\n");
     printf("    ╚══════════════════════════════════════════════════════════╝\n");
     changerCouleur(COULEUR_RESET);
 }
@@ -422,7 +451,7 @@ void afficherDefaite(void) {
     changerCouleur(COULEUR_ROUGE);
     printf("\n\n");
     printf("    ╔══════════════════════════════════════════════════════════╗\n");
-    printf("    ║                  NIVEAU ÉCHOUÉ                           ║\n");
+    printf("    ║                      NIVEAU ÉCHOUÉ                       ║\n");
     printf("    ╚══════════════════════════════════════════════════════════╝\n");
     changerCouleur(COULEUR_RESET);
 }
@@ -432,4 +461,24 @@ void afficherMessageTemporaire(char* message) {
     changerCouleur(COULEUR_JAUNE);
     printf("\n  >> %s\n", message);
     changerCouleur(COULEUR_RESET);
+}
+
+// Rafraîchit UNIQUEMENT le timer, sans effacer l'écran.
+void rafraichirTimerSeulement(Partie* partie) {
+    int posX = 67;
+    int posY = 7; // Ligne TEMPS
+
+    // CORRECTION : La position des chiffres commence à X = 76
+    // (posX(65) + 11 chars pour "║ TEMPS : ")
+    int chiffresX = posX + 11;
+
+    // Se positionne
+    allerA(chiffresX, posY);
+
+    // CORRECTION : On s'assure d'utiliser %02d pour les minutes
+    // pour toujours avoir 2 chiffres (ex: "01" au lieu de "1")
+    changerCouleur(COULEUR_CYAN);
+    printf("%02d:%02d", partie->temps_restant / 60, partie->temps_restant % 60);
+
+    allerA(0, 0);
 }
