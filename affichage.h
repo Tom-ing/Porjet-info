@@ -2,9 +2,8 @@
 #define AFFICHAGE_H
 
 #include "structures.h"
-// #include <windows.h> // Pas besoin si on ne centre pas
 
-// Codes couleurs pour Windows
+// Codes couleurs pour utiliser les couleurs de Windowq
 #define COULEUR_RESET 7
 #define COULEUR_ROUGE 12
 #define COULEUR_VIOLET 13
@@ -18,7 +17,6 @@
 void changerCouleur(int couleur);
 void allerA(int x, int y);
 void effacerEcran(void);
-// int obtenirLargeurConsole(void); // On enlève
 
 // Affichage du menu et des écrans
 void afficherMenuPrincipal(void);
@@ -26,10 +24,15 @@ void afficherRegles(void);
 
 // Affichage du jeu
 void afficherNiveauJeu(Partie* partie, int curseurX, int curseurY, int selectX, int selectY);
-void afficherPlateau(Partie* partie, int curseurX, int curseurY, int selectX, int selectY);
-void afficherStats(Partie* partie);
-void afficherControles(void);
-void afficherLegende(void);
+
+// Ces fonctions prennent maintenant des coordonnées
+void afficherPlateau(Partie* partie, int curseurX, int curseurY, int selectX, int selectY, int startX, int startY);
+void afficherStats(Partie* partie, int startX, int startY);
+void afficherControles(int startX, int startY);
+void afficherLegende(int startX, int startY);
+
+//Source: Chatgpt pour la rafraichissement unique du Timer car sinon injouable
+void rafraichirTimerSeulement(Partie* partie);
 
 // Messages
 void afficherVictoire(void);
