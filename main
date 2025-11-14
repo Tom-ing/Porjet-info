@@ -1,67 +1,51 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- * FICHIER: main.c
- * Description: Programme principal (VERSION 100% GETCH - SANS SCANF)
- * ════════════════════════════════════════════════════════════════════════════
- */
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>      // <-- Indispensable pour getch()
+#include <conio.h>
 #include "structures.h"
 #include "affichage.h"
 #include "moteur.h"
 #include "sauvegarde.h"
+#include <time.h>
+#include <windows.h>
 
-// Constantes pour la taille d'affichage (correspondant à affichage.c)
-#define HAUTEUR_AFFICHEE 12
-#define LARGEUR_AFFICHEE 20
-
-// Déclaration de la fonction de la boucle de jeu
 void jouerNiveau(Partie* partie);
-
 
 int main() {
     Partie partie;
     int continuer = 1;
 
-    // Configuration de la console
     system("chcp 65001 > nul");
 
     while (continuer) {
         afficherMenuPrincipal();
 
-        // --- LA CORRECTION CLÉ EST ICI ---
-        // On utilise getch() pour le menu.
-        // Il ne nécessite pas [Entrée] et ne s'affiche pas à l'écran.
         char touche = getch();
 
         switch (touche) {
-            case '1': // Afficher les règles
+            case '1':
                 afficherRegles();
-                getch(); // Attendre une touche pour revenir
+                getch();
                 break;
 
-            case '2': // Commencer une nouvelle partie
+            case '2':
                 initialiserPartie(&partie);
-                // On appelle SEULEMENT la boucle de jeu.
                 jouerNiveau(&partie);
                 break;
 
-            case '3': // Charger une partie
+            case '3':
                 effacerEcran();
                 afficherMessageTemporaire("Chargement non implémenté pour cette démo");
                 getch();
                 break;
 
-            case '4': // Quitter
+            case '4':
                 continuer = 0;
                 break;
 
-            default: // Choix invalide
-                allerA(0, 30); // Position en bas
+            default:
+                allerA(0, 30);
                 afficherMessageTemporaire("Choix invalide !");
-                getch(); // Attend une touche pour continuer
+                getch();
                 break;
         }
     }
@@ -74,94 +58,113 @@ int main() {
     return 0;
 }
 
-
-/*
- * ════════════════════════════════════════════════════════════════════════════
- * Boucle de jeu principale (Gère Flèches + ZQSD)
- * ════════════════════════════════════════════════════════════════════════════
- */
 void jouerNiveau(Partie* partie) {
     int curseurX = 5;
     int curseurY = 5;
-
-    int selectX = -1; // -1 = rien de sélectionné
-    int selectY = -1;
-
+    int selectX = -1, selectY = -1;
     int partieEnCours = 1;
     unsigned char touche;
 
-    // Affiche le niveau UNE SEULE FOIS (au début)
+    //timer
+    clock_t debutNiveau = clock();
+    int tempsInitial = partie->temps_restant;
+    int tempsAffiche = tempsInitial;
+
+    // Affiche le jeu COMPLET une première fois
     afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
 
     while (partieEnCours) {
 
-        touche = getch(); // Lit la touche instantanément
+        //gestion timer
+        clock_t now = clock();
+        double tempsPasse = ((double)(now - debutNiveau)) / CLOCKS_PER_SEC;
+        partie->temps_restant = tempsInitial - (int)tempsPasse;
+        if (partie->temps_restant < 0) partie->temps_restant = 0;
 
-        // --- GESTION DES FLÈCHES (Codes étendus 224) ---
-        if (touche == 224) {
-            touche = getch(); // Lit le deuxième code
-            switch (touche) {
-                case 72: // Flèche HAUT
-                    if (curseurY > 0) curseurY--;
-                    break;
-                case 80: // Flèche BAS
-                    if (curseurY < HAUTEUR_AFFICHEE - 1) curseurY++;
-                    break;
-                case 75: // Flèche GAUCHE
-                    if (curseurX > 0) curseurX--;
-                    break;
-                case 77: // Flèche DROITE
-                    if (curseurX < LARGEUR_AFFICHEE - 1) curseurX++;
-                    break;
+        int actionClavier = 0;
+
+        // --- 2. GESTION DES ENTRÉES (NON-BLOQUANT) ---
+        if (kbhit()) {
+            touche = getch();
+            actionClavier = 1; // rafraichissement
+
+            if (touche == 224) {
+                touche = getch();
+                switch (touche) {
+                    case 72: if (curseurY > 0) curseurY--; break;
+                    case 80: if (curseurY < HAUTEUR - 1) curseurY++; break;
+                    case 75: if (curseurX > 0) curseurX--; break;
+                    case 77: if (curseurX < LARGEUR - 1) curseurX++; break;
+                }
             }
-        }
-        // --- GESTION DES TOUCHES NORMALES (ZQSD, Espace, Echap) ---
-        else {
-            switch (touche) {
-                // Quitter (Echap)
-                case 27:
-                    partieEnCours = 0;
-                    break;
-
-                // Mouvements (ZQSD)
-                case 'z': case 'Z':
-                    if (curseurY > 0) curseurY--;
-                    break;
-                case 's': case 'S':
-                    if (curseurY < HAUTEUR_AFFICHEE - 1) curseurY++;
-                    break;
-                case 'q': case 'Q':
-                    if (curseurX > 0) curseurX--;
-                    break;
-                case 'd': case 'D':
-                    if (curseurX < LARGEUR_AFFICHEE - 1) curseurX++;
-                    break;
-
-                // Sélection (Espace)
-                case ' ':
-                    if (selectX == -1) {
-                        selectX = curseurX;
-                        selectY = curseurY;
-                    } else {
-                        if (estAdjacent(selectY, selectX, curseurY, curseurX)) {
-                            permuterItems(partie, selectY, selectX, curseurY, curseurX);
-                            // À FAIRE : logique de détection/gravité ici
+            else {
+                switch (touche) {
+                    case 27: partieEnCours = 0; break;
+                    case 'z': case 'Z': if (curseurY > 0) curseurY--; break;
+                    case 's': case 'S': if (curseurY < HAUTEUR - 1) curseurY++; break;
+                    case 'q': case 'Q': if (curseurX > 0) curseurX--; break;
+                    case 'd': case 'D': if (curseurX < LARGEUR - 1) curseurX++; break;
+                    case ' ':
+                        if (selectX == -1) {
+                            selectX = curseurX;
+                            selectY = curseurY;
                         } else {
-                            allerA(0, HAUTEUR_AFFICHEE + 10);
-                            afficherMessageTemporaire("Sélection invalide ! Échange non adjacent.");
-                            getch();
+                            if (estAdjacent(selectY, selectX, curseurY, curseurX)) {
+                                permuterItems(partie, selectY, selectX, curseurY, curseurX);
+                                gererMatchsEtCascades(partie);
+                            } else {
+                                allerA(0, 35);
+                                afficherMessageTemporaire("Sélection invalide ! Échange non adjacent.");
+                                getch();
+                            }
+                            selectX = -1; selectY = -1;
                         }
-                        selectX = -1;
-                        selectY = -1;
-                    }
-                    break;
-            } // fin switch (touches normales)
-        } // fin else
+                        break;
+                } // fin switch
+            } // fin else (touche normale)
+        } // fin if (kbhit)
 
-        // --- Rafraîchissement de l'affichage ---
-        if (partieEnCours) {
-            // On rafraîchit l'écran APRÈS chaque action
+        // --- 3. VÉRIFICATION DE L'ÉTAT DU JEU ---
+        int victoire = verifierVictoire(partie);
+
+        if (victoire) {
+            // Affiche l'écran final (avec le score à jour)
+            if(!actionClavier) afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
+            afficherVictoire();
+            getch();
+            partieEnCours = 0;
+
+        } else if (partie->coups_restants <= 0 || partie->temps_restant <= 0) {
+            // Affiche l'écran final (avec le score à jour)
+            if(!actionClavier) afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
+
+            partie->vies--;
+            afficherDefaite();
+
+            if (partie->temps_restant <= 0) {
+                allerA(0, 35); afficherMessageTemporaire("Temps ecoule ! Vous perdez une vie.");
+            } else {
+                allerA(0, 35); afficherMessageTemporaire("Plus de coups ! Vous perdez une vie.");
+            }
+            getch();
+            partieEnCours = 0;
+        }
+
+        // --- 4. RAFRAÎCHISSEMENT DE L'ÉCRAN ---
+
+        // 4a. Rafraîchissement LÉGER (Timer)
+        // Si le timer a changé ET qu'on n'a pas appuyé sur une touche
+        if (partieEnCours && !actionClavier && partie->temps_restant != tempsAffiche) {
+            tempsAffiche = partie->temps_restant;
+            rafraichirTimerSeulement(partie); // Ne rafraîchit que le timer
+        }
+
+        // 4b. Rafraîchissement LOURD (Tout l'écran)
+        // Si le joueur a appuyé sur une touche (ou fait un match)
+        if (actionClavier && partieEnCours) {
             afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
         }
+
+        Sleep(10); // Petite pause (50ms) pour ne pas saturer le CPU
     }
 }
