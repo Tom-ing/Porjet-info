@@ -9,7 +9,7 @@ void initialiserPartie(Partie* partie);
 void genererNiveau(Partie* partie, int niveau);
 void gererMatchsEtCascades(Partie* partie);
 
-void remplirTableauAleatoire(int tableau[HAUTEUR][LARGEUR]);
+void remplirTableauAleatoire(Partie* partie);
 void remplirCasesVides(Partie* partie);
 void appliquerGravite(Partie* partie);
 
