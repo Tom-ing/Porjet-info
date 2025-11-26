@@ -36,6 +36,7 @@ void rafraichirTimerSeulement(Partie* partie);
 
 // Messages
 void afficherVictoire(void);
+void afficherEcranFinJeu(void);
 void afficherDefaite(void);
 void afficherMessageTemporaire(char* message);
 
