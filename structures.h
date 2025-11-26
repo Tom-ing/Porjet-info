@@ -5,6 +5,8 @@
 #define LARGEUR 15
 
 #define NB_TYPES_ITEMS 5
+#define ITEM_BOMBE 6
+#define ITEM_MUR 7
 #define NB_VIES_INITIAL 3
 #define NB_NIVEAUX 3
 
