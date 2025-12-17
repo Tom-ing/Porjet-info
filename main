@@ -64,23 +64,33 @@ int main() {
 
             case '3': // Charger une partie
                 effacerEcran();
-                changerCouleur(COULEUR_CYAN);
-                printf("\n  >> Entrez votre pseudo pour charger : ");
-                changerCouleur(COULEUR_BLANC);
+            changerCouleur(COULEUR_CYAN);
+            printf("\n  >> Entrez votre pseudo pour charger : ");
+            changerCouleur(COULEUR_BLANC);
 
-                saisirPseudo(pseudo, 50);
+            saisirPseudo(pseudo, 50);
 
-                // Si la sauvegarde existe on récupère le niveau et les vies
-                if (chargerPartie(pseudo, &partie.niveau, &partie.vies)) {
-                    printf("\n\n  >> Partie trouvée ! (Niveau %d, %d Vies)", partie.niveau, partie.vies);
-                    Sleep(1500);
-                    genererNiveau(&partie, partie.niveau); // On génère le plateau correspondant
-                    lancerJeu(&partie);
-                } else {
-                    printf("\n\n  >> Aucune sauvegarde trouvée pour ce pseudo.");
-                    Sleep(2000);
-                }
-                break;
+            // 1. On essaie d'abord de charger une sauvegarde "en cours" (complète)
+            if (chargerPartieComplete(pseudo, &partie)) {
+                printf("\n\n  >> Partie suspendue retrouvee ! (Niveau %d, %ds restants)",
+                       partie.niveau, partie.temps_restant);
+                Sleep(1500);
+                // Pas besoin de genererNiveau, car 'partie' contient déjà le plateau sauvegardé !
+                lancerJeu(&partie);
+            }
+            // 2. Sinon, on cherche une sauvegarde classique (début de niveau)
+            else if (chargerPartie(pseudo, &partie.niveau, &partie.vies)) {
+                printf("\n\n  >> Progression retrouvee ! (Niveau %d, %d Vies)",
+                       partie.niveau, partie.vies);
+                Sleep(1500);
+                genererNiveau(&partie, partie.niveau);
+                lancerJeu(&partie);
+            }
+            else {
+                printf("\n\n  >> Aucune sauvegarde trouvée pour ce pseudo.");
+                Sleep(2000);
+            }
+            break;
 
             case '4': // Quitter
                 continuer = 0;
@@ -215,10 +225,38 @@ int jouerNiveau(Partie* partie) {
                 }
             } else {
                 switch (touche) {
-                    case 27: // ECHAP (Abandon)
+                    case 27: // TOUCHE ECHAP
+                        // On met en pause implicitement car on attend une saisie
+                            allerA(0, HAUTEUR + 10); // On écrit en bas de l'écran
+                    changerCouleur(COULEUR_JAUNE);
+                    printf("Voulez-vous sauvegarder et quitter ? (O/N) : ");
+
+                    char reponse = getch();
+                    if (reponse == 'o' || reponse == 'O') {
+                        char pseudoSauvegarde[50];
+                        changerCouleur(COULEUR_CYAN);
+                        printf("\nEntrez votre pseudo : ");
+                        changerCouleur(COULEUR_BLANC);
+
+                        // On réutilise ta fonction de saisie
+                        saisirPseudo(pseudoSauvegarde, 50);
+
+                        // On sauvegarde TOUT (Plateau, Timer, Contrat...)
+                        if(sauvegarderPartieComplete(pseudoSauvegarde, partie)) {
+                            printf("\nPartie sauvegardee avec succes ! A bientot.");
+                        } else {
+                            printf("\nErreur de sauvegarde !");
+                        }
+                        Sleep(1000);
                         partieEnCours = 0;
-                        resultatNiveau = -1;
-                        break;
+                        resultatNiveau = -1; // -1 pour dire qu'on quitte
+                    }
+                    else {
+                        // Si on répond Non, on efface le message et on continue à jouer
+                        // (Optionnel : il faudrait redessiner le bas de l'écran proprement)
+                        afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
+                    }
+                    break;
 
                     case 'z': case 'Z': if (curseurY > 0) curseurY--; break;
                     case 's': case 'S': if (curseurY < HAUTEUR - 1) curseurY++; break;
