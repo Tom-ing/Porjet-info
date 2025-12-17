@@ -12,6 +12,7 @@ void gererMatchsEtCascades(Partie* partie);
 void remplirTableauAleatoire(Partie* partie);
 void remplirCasesVides(Partie* partie);
 void appliquerGravite(Partie* partie);
+void propagerVirus(Partie* partie);
 
 int permuterItems(Partie* partie, int y1, int x1, int y2, int x2);
 int estAdjacent(int y1, int x1, int y2, int x2);
