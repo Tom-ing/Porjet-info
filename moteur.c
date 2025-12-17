@@ -31,6 +31,54 @@ static void declencherExplosionBombe(Partie* partie, int centreY, int centreX) {
     }
 }
 
+// === PROPAGATION DU VIRUS ===
+// Source : Assistant IA (Algorithme de simulation cellulaire)
+// Rôle : À chaque tour, les virus ont une chance de transformer un voisin.
+void propagerVirus(Partie* partie) {
+    // Tableau temporaire pour ne pas qu'un nouveau virus contamine tout de suite dans le même tour
+    int nouveauxVirus[HAUTEUR][LARGEUR] = {0};
+    int virusSePropage = 0;
+
+    for (int i = 0; i < HAUTEUR; i++) {
+        for (int j = 0; j < LARGEUR; j++) {
+
+            // Si on trouve un virus existant
+            if (partie->tableau[i][j] == ITEM_VIRUS) {
+
+                // Il a 1 chance sur 10 (10%) de contaminer un voisin ce tour-ci
+                if ((rand() % 10) == 0) {
+
+                    // On choisit une direction au hasard (0:Haut, 1:Bas, 2:Gauche, 3:Droite)
+                    int direction = rand() % 4;
+                    int y = i, x = j;
+
+                    if (direction == 0 && i > 0) y--;
+                    else if (direction == 1 && i < HAUTEUR - 1) y++;
+                    else if (direction == 2 && j > 0) x--;
+                    else if (direction == 3 && j < LARGEUR - 1) x++;
+
+                    // Si la case cible est un fruit normal, elle est contaminée
+                    int cible = partie->tableau[y][x];
+                    if (cible >= 1 && cible <= NB_TYPES_ITEMS) {
+                        nouveauxVirus[y][x] = 1;
+                        virusSePropage = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // Application des contaminations
+    if (virusSePropage) {
+        for (int i = 0; i < HAUTEUR; i++) {
+            for (int j = 0; j < LARGEUR; j++) {
+                if (nouveauxVirus[i][j] == 1) {
+                    partie->tableau[i][j] = ITEM_VIRUS;
+                }
+            }
+        }
+    }
+}
 // === INITIALISATION ===
 // Rôle : Prépare une nouvelle partie à zéro.
 void initialiserPartie(Partie* partie) {
@@ -129,8 +177,9 @@ int permuterItems(Partie* partie, int y1, int x1, int y2, int x2) {
     int item1 = partie->tableau[y1][x1];
     int item2 = partie->tableau[y2][x2];
 
-    // RÈGLE IMPORTANTE : On ne peut pas déplacer un MUR
+    // Règle : Impossible de bouger un MUR ou un VIRUS
     if (item1 == ITEM_MUR || item2 == ITEM_MUR) return 0;
+    if (item1 == ITEM_VIRUS || item2 == ITEM_VIRUS) return 0;
 
     // GESTION SPECIALE : Si on touche une BOMBE
     int bombeDeclenchee = 0;
@@ -185,16 +234,15 @@ void remplirCasesVides(Partie* partie) {
     for (int i = 0; i < HAUTEUR; i++) {
         for (int j = 0; j < LARGEUR; j++) {
             if (partie->tableau[i][j] == 0) {
-                int chance = rand() % 300;
-                // Apparition rare de Bombe (0.3%) si niveau > 1
-                if (chance == 0 && partie->niveau > 1) {
-                    partie->tableau[i][j] = ITEM_BOMBE;
+                int chance = rand() % 100;
+
+                // NIVEAU 2+ : Apparition des pièges
+                if (partie->niveau >= 2) {
+                    if (chance == 0) partie->tableau[i][j] = ITEM_BOMBE; // 1%
+                    else if (chance <= 2) partie->tableau[i][j] = ITEM_MUR; // 2%
+                    else if (chance <= 4) partie->tableau[i][j] = ITEM_VIRUS; // 2% VIRUS
+                    else partie->tableau[i][j] = (rand() % NB_TYPES_ITEMS) + 1;
                 }
-                // Apparition rare de Mur (2%) si niveau > 1
-                else if (chance >= 1 && chance <= 6 && partie->niveau > 1) {
-                    partie->tableau[i][j] = ITEM_MUR;
-                }
-                // Sinon Fruit aléatoire
                 else {
                     partie->tableau[i][j] = (rand() % NB_TYPES_ITEMS) + 1;
                 }
@@ -290,11 +338,29 @@ int detecterEtEliminerMatchs(Partie* partie) {
                 partie->tableau[i][j] = 0;
                 totalElimines++;
 
-                // Règle : Les murs voisins sont fragilisés et détruits
-                if (i > 0 && partie->tableau[i-1][j] == ITEM_MUR) partie->tableau[i-1][j] = 0;
-                if (i < HAUTEUR - 1 && partie->tableau[i+1][j] == ITEM_MUR) partie->tableau[i+1][j] = 0;
-                if (j > 0 && partie->tableau[i][j-1] == ITEM_MUR) partie->tableau[i][j-1] = 0;
-                if (j < LARGEUR - 1 && partie->tableau[i][j+1] == ITEM_MUR) partie->tableau[i][j+1] = 0;
+                // Vérifie en HAUT
+                if (i > 0) {
+                    int voisin = partie->tableau[i-1][j];
+                    if (voisin == ITEM_MUR || voisin == ITEM_VIRUS) partie->tableau[i-1][j] = 0;
+                }
+
+                // Vérifie en BAS
+                if (i < HAUTEUR - 1) {
+                    int voisin = partie->tableau[i+1][j];
+                    if (voisin == ITEM_MUR || voisin == ITEM_VIRUS) partie->tableau[i+1][j] = 0;
+                }
+
+                // Vérifie à GAUCHE
+                if (j > 0) {
+                    int voisin = partie->tableau[i][j-1];
+                    if (voisin == ITEM_MUR || voisin == ITEM_VIRUS) partie->tableau[i][j-1] = 0;
+                }
+
+                // Vérifie à DROITE
+                if (j < LARGEUR - 1) {
+                    int voisin = partie->tableau[i][j+1];
+                    if (voisin == ITEM_MUR || voisin == ITEM_VIRUS) partie->tableau[i][j+1] = 0;
+                }
             }
         }
     }
