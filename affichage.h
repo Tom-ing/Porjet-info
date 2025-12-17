@@ -39,5 +39,8 @@ void afficherVictoire(void);
 void afficherEcranFinJeu(void);
 void afficherDefaite(void);
 void afficherMessageTemporaire(char* message);
+void afficherUneCase(Partie* partie, int gridX, int gridY, int curseurX, int curseurY, int selectX, int selectY);
+
+void saisirPseudo(char* buffer, int longueurMax);
 
 #endif // AFFICHAGE_H
