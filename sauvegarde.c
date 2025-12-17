@@ -2,20 +2,17 @@
 #include <string.h>
 #include "sauvegarde.h"
 
-// Structure locale pour stocker le fichier en mémoire temporairement
-typedef struct {
-    char pseudo[50];
-    int niveau;
-    int vies;
-} Enregistrement;
-
-// Sauvegarde Intelligente : Met à jour ou Crée
+// === SAUVEGARDE ===
+// Source : Assistant IA (Algorithme de mise à jour d'un fichier texte sans doublons)
+// Rôle : Met à jour la sauvegarde d'un joueur ou en crée une nouvelle.
+// Entrée : Pseudo, Niveau atteint, Vies restantes.
+// Sortie : 1 si succès, 0 si erreur fichier.
 int sauvegarderPartie(char* pseudo, int niveau, int vies) {
-    Enregistrement saves[100]; // Capacité max de 100 joueurs
+    Enregistrement saves[100]; // Limite : 100 joueurs max
     int count = 0;
     int joueurTrouve = 0;
 
-    // 1. LECTURE : On charge tout le fichier en mémoire
+    // 1. LECTURE : On charge tout le fichier en mémoire RAM
     FILE* fichierLecture = fopen(FICHIER_SAUVEGARDE, "r");
     if (fichierLecture != NULL) {
         while (count < 100 && fscanf(fichierLecture, "%s %d %d",
@@ -23,7 +20,7 @@ int sauvegarderPartie(char* pseudo, int niveau, int vies) {
                &saves[count].niveau,
                &saves[count].vies) == 3) {
 
-            // Si on trouve le joueur, on met à jour ses stats DIRECTEMENT
+            // Si le joueur existe déjà, on met à jour ses infos
             if (strcmp(saves[count].pseudo, pseudo) == 0) {
                 saves[count].niveau = niveau;
                 saves[count].vies = vies;
@@ -34,7 +31,7 @@ int sauvegarderPartie(char* pseudo, int niveau, int vies) {
         fclose(fichierLecture);
     }
 
-    // 2. AJOUT : Si le joueur n'existait pas, on l'ajoute à la fin
+    // 2. AJOUT : Si nouveau joueur, on l'ajoute à la liste
     if (!joueurTrouve && count < 100) {
         strcpy(saves[count].pseudo, pseudo);
         saves[count].niveau = niveau;
@@ -42,8 +39,8 @@ int sauvegarderPartie(char* pseudo, int niveau, int vies) {
         count++;
     }
 
-    // 3. ÉCRITURE : On écrase le fichier avec la liste mise à jour
-    FILE* fichierEcriture = fopen(FICHIER_SAUVEGARDE, "w"); // "w" écrase tout
+    // 3. ÉCRITURE : On réécrit tout le fichier proprement
+    FILE* fichierEcriture = fopen(FICHIER_SAUVEGARDE, "w");
     if (fichierEcriture == NULL) return 0;
 
     for (int i = 0; i < count; i++) {
@@ -54,7 +51,10 @@ int sauvegarderPartie(char* pseudo, int niveau, int vies) {
     return 1;
 }
 
-// Chargement (Inchangé, sauf qu'il est plus fiable maintenant)
+// === CHARGEMENT ===
+// Rôle : Cherche un pseudo et récupère sa progression.
+// Entrée : Pseudo cherché.
+// Sortie (via pointeurs) : Le niveau et les vies du joueur.
 int chargerPartie(char* pseudo, int* niveau, int* vies) {
     FILE* fichier = fopen(FICHIER_SAUVEGARDE, "r");
     if (fichier == NULL) return 0;
@@ -62,15 +62,16 @@ int chargerPartie(char* pseudo, int* niveau, int* vies) {
     char pseudoLu[50];
     int niveauLu, viesLu;
 
+    // On parcourt le fichier ligne par ligne
     while (fscanf(fichier, "%s %d %d", pseudoLu, &niveauLu, &viesLu) == 3) {
         if (strcmp(pseudoLu, pseudo) == 0) {
             *niveau = niveauLu;
             *vies = viesLu;
             fclose(fichier);
-            return 1; // Trouvé
+            return 1; // Joueur trouvé
         }
     }
 
     fclose(fichier);
-    return 0; // Pas trouvé
+    return 0; // Joueur pas trouvé
 }
