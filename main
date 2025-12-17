@@ -10,19 +10,24 @@
 #include "moteur.h"
 #include "sauvegarde.h"
 
+// Prototypes locaux
 void saisirPseudo(char* buffer, int longueurMax);
 int jouerNiveau(Partie* partie);
-void lancerJeu(Partie* partie); 
+void lancerJeu(Partie* partie);
 
-// --- FONCTION DE SAISIE ---
+// === FONCTION DE SAISIE SÉCURISÉE ===
+// Source : Assistant IA (Alternative sécurisée à scanf pour l'interface graphique)
+// Rôle : Permet de taper son pseudo sans faire planter l'affichage graphique.
+// Entrée : Le tableau où stocker le texte (buffer) et sa taille max.
+// Sortie : Aucune (modifie directement le buffer).
 void saisirPseudo(char* buffer, int longueurMax) {
     int i = 0;
     char c;
-    memset(buffer, 0, longueurMax);
+    memset(buffer, 0, longueurMax); // On vide le buffer
     while (1) {
-        c = getch();
-        if (c == 13) break; // Entrée
-        else if (c == 8) { // Backspace
+        c = getch(); // Lit une touche sans attendre "Entrée"
+        if (c == 13) break; // Touche Entrée validée
+        else if (c == 8) { // Touche Retour Arrière
             if (i > 0) { i--; printf("\b \b"); buffer[i] = '\0'; }
         }
         else if (i < longueurMax - 1 && c >= 32 && c <= 126) {
@@ -31,55 +36,58 @@ void saisirPseudo(char* buffer, int longueurMax) {
     }
 }
 
-// --- MAIN ---
+// === MAIN ===
+// Rôle : Initialise le programme et gère la boucle du Menu Principal.
 int main() {
     Partie partie;
     int continuer = 1;
     char pseudo[50];
-    
+
+    // Configure la console pour afficher les accents et émojis (UTF-8)
+    // Source : Assistant IA (Configuration Windows)
     system("chcp 65001 > nul");
-    
+
     while (continuer) {
         afficherMenuPrincipal();
-        char touche = getch(); 
-        
+        char touche = getch();
+
         switch (touche) {
-            case '1': // Règles
+            case '1': // Afficher les règles
                 afficherRegles();
-                getch(); 
+                getch();
                 break;
-                
-            case '2': // NOUVELLE PARTIE
-                // On ne demande plus le pseudo au début
-                initialiserPartie(&partie); 
-                lancerJeu(&partie); 
+
+            case '2': // Nouvelle Partie
+                initialiserPartie(&partie);
+                lancerJeu(&partie);
                 break;
-                
-            case '3': // CHARGER PARTIE
+
+            case '3': // Charger une partie
                 effacerEcran();
                 changerCouleur(COULEUR_CYAN);
                 printf("\n  >> Entrez votre pseudo pour charger : ");
                 changerCouleur(COULEUR_BLANC);
-                
+
                 saisirPseudo(pseudo, 50);
-                
+
+                // Si la sauvegarde existe on récupère le niveau et les vies
                 if (chargerPartie(pseudo, &partie.niveau, &partie.vies)) {
                     printf("\n\n  >> Partie trouvée ! (Niveau %d, %d Vies)", partie.niveau, partie.vies);
                     Sleep(1500);
-                    genererNiveau(&partie, partie.niveau);
+                    genererNiveau(&partie, partie.niveau); // On génère le plateau correspondant
                     lancerJeu(&partie);
                 } else {
                     printf("\n\n  >> Aucune sauvegarde trouvée pour ce pseudo.");
                     Sleep(2000);
                 }
                 break;
-                
+
             case '4': // Quitter
                 continuer = 0;
                 break;
         }
     }
-    
+
     effacerEcran();
     changerCouleur(COULEUR_VERT);
     printf("\n\n    Merci d'avoir joué à ECE HEROES !\n\n");
@@ -87,52 +95,50 @@ int main() {
     return 0;
 }
 
-// --- GESTIONNAIRE DE JEU (Boucle des niveaux) ---
+// === GESTIONNAIRE DE JEU ===
+// Rôle : Gère l'enchaînement des niveaux (1 -> 2 -> 3) et la sauvegarde entre eux.
+// Entrée : La structure Partie (pointeur).
 void lancerJeu(Partie* partie) {
     char pseudo[50];
-    
-    // Tant qu'on a des vies et des niveaux
+
+    // Tant que le joueur est vivant et n'a pas fini le jeu
     while (partie->vies > 0 && partie->niveau <= NB_NIVEAUX) {
-        
+
+        // On lance la boucle de jeu temps réel pour ce niveau
         int resultat = jouerNiveau(partie);
-        
-        // --- VICTOIRE ---
+
+        // CAS 1 : VICTOIRE
         if (resultat == 1) {
-            
-            // 1. Animation de victoire (si pas dernier niveau)
             if (partie->niveau < NB_NIVEAUX) {
-                afficherVictoire(); 
-                
-                // 2. Proposition de sauvegarde MANUELLE
+                afficherVictoire();
+
+                // Proposition de sauvegarde
                 effacerEcran();
                 changerCouleur(COULEUR_VERT);
                 printf("\n\n    NIVEAU %d REUSSI !", partie->niveau);
                 changerCouleur(COULEUR_JAUNE);
                 printf("\n\n    Voulez-vous sauvegarder ? (O/N) : ");
-                
+
                 char choix = getch();
                 if (choix == 'o' || choix == 'O') {
-                    printf("OUI");
                     changerCouleur(COULEUR_CYAN);
                     printf("\n    Entrez un pseudo : ");
                     changerCouleur(COULEUR_BLANC);
-                    
                     saisirPseudo(pseudo, 50);
-                    
-                    // On sauvegarde le niveau SUIVANT
-                    int niveauASauvegarder = partie->niveau + 1;
-                    sauvegarderPartie(pseudo, niveauASauvegarder, partie->vies);
-                    
+
+                    // On sauvegarde la progression (Niveau suivant)
+                    sauvegarderPartie(pseudo, partie->niveau + 1, partie->vies);
+
                     changerCouleur(COULEUR_VERT);
                     printf("\n    Sauvegarde effectuée !");
                     Sleep(1000);
                 }
             }
 
-            // 3. Suite du jeu
+            // Passage au niveau suivant ou Fin du jeu
             if (partie->niveau == NB_NIVEAUX) {
                 afficherEcranFinJeu();
-                break; 
+                break;
             } else {
                 partie->niveau++;
                 effacerEcran();
@@ -142,48 +148,50 @@ void lancerJeu(Partie* partie) {
                 genererNiveau(partie, partie->niveau);
             }
         }
-        // --- ABANDON (Echap) ---
+        // CAS 2 : ABANDON (Touche Echap)
         else if (resultat == -1) {
             break;
         }
-        // --- DÉFAITE ---
+        // CAS 3 : DÉFAITE
         else {
             if (partie->vies > 0) {
                 effacerEcran();
                 changerCouleur(COULEUR_ROUGE);
                 printf("\n\n    IL VOUS RESTE %d VIES. RECOMMENCEZ !\n", partie->vies);
-                changerCouleur(COULEUR_RESET);
                 Sleep(2000);
-                genererNiveau(partie, partie->niveau);
+                genererNiveau(partie, partie->niveau); // On recommence le même niveau
             } else {
                 effacerEcran();
                 changerCouleur(COULEUR_ROUGE);
-                printf("\n\n    GAME OVER\n");
+                printf("\n\n    GAME OVER FINAL\n");
                 Sleep(2000);
             }
         }
     }
 }
 
-// --- BOUCLE DE JEU (MUX) ---
+// === BOUCLE DE JEU (TEMPS RÉEL) ===
+// Source : Assistant IA (Structure de boucle non-bloquante complexe)
+// Rôle : C'est le Moteur MUX. Il gère le timer, les inputs clavier et l'affichage simultanément.
+// Entrée : La structure Partie.
+// Sortie : 1 (Gagné), 0 (Perdu), -1 (Abandon).
 int jouerNiveau(Partie* partie) {
-    int curseurX = 5;
-    int curseurY = 5;
-    int selectX = -1, selectY = -1;
+    int curseurX = 5, curseurY = 5; // Position de départ du curseur
+    int selectX = -1, selectY = -1; // Aucune sélection au début (-1)
     int partieEnCours = 1;
     unsigned char touche;
     int resultatNiveau = 0;
 
-    // Timer
-    clock_t debutNiveau = clock(); 
+    // Initialisation du Chronomètre
+    clock_t debutNiveau = clock();
     int tempsInitial = partie->temps_restant;
-    int tempsAffiche = tempsInitial; 
+    int tempsAffiche = tempsInitial;
 
     afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
 
     while (partieEnCours) {
-        
-        // 1. Timer
+
+        // 1. GESTION DU TEMPS (Calcul des secondes écoulées)
         clock_t now = clock();
         double tempsPasse = ((double)(now - debutNiveau)) / CLOCKS_PER_SEC;
         partie->temps_restant = tempsInitial - (int)tempsPasse;
@@ -191,44 +199,48 @@ int jouerNiveau(Partie* partie) {
 
         int actionClavier = 0;
 
-        // 2. Clavier
-        if (kbhit()) { 
-            touche = getch(); 
-            actionClavier = 1; 
-            
-            if (touche == 224) { 
-                touche = getch(); 
+        // 2. GESTION DU CLAVIER (Non bloquant avec kbhit)
+        if (kbhit()) {
+            touche = getch();
+            actionClavier = 1;
+
+            // Gestion des flèches directionnelles (codes spéciaux)
+            if (touche == 224) {
+                touche = getch();
                 switch (touche) {
-                    case 72: if (curseurY > 0) curseurY--; break;
-                    case 80: if (curseurY < HAUTEUR - 1) curseurY++; break;
-                    case 75: if (curseurX > 0) curseurX--; break;
-                    case 77: if (curseurX < LARGEUR - 1) curseurX++; break;
+                    case 72: if (curseurY > 0) curseurY--; break; // Haut
+                    case 80: if (curseurY < HAUTEUR - 1) curseurY++; break; // Bas
+                    case 75: if (curseurX > 0) curseurX--; break; // Gauche
+                    case 77: if (curseurX < LARGEUR - 1) curseurX++; break; // Droite
                 }
             } else {
                 switch (touche) {
-                    case 27: // ECHAP
-                        partieEnCours = 0; 
-                        resultatNiveau = -1; 
+                    case 27: // ECHAP (Abandon)
+                        partieEnCours = 0;
+                        resultatNiveau = -1;
                         break;
-                    
+
                     case 'z': case 'Z': if (curseurY > 0) curseurY--; break;
                     case 's': case 'S': if (curseurY < HAUTEUR - 1) curseurY++; break;
                     case 'q': case 'Q': if (curseurX > 0) curseurX--; break;
                     case 'd': case 'D': if (curseurX < LARGEUR - 1) curseurX++; break;
-                    
-                    case ' ':
+
+                    case ' ': // ESPACE (Sélection)
                         if (selectX == -1) {
+                            // Première sélection
                             selectX = curseurX;
                             selectY = curseurY;
                         } else {
+                            // Deuxième sélection : Tentative d'échange
                             if (estAdjacent(selectY, selectX, curseurY, curseurX)) {
                                 permuterItems(partie, selectY, selectX, curseurY, curseurX);
-                                gererMatchsEtCascades(partie);
+                                gererMatchsEtCascades(partie); // On lance la réaction en chaîne
                             } else {
-                                allerA(0, 35); 
-                                afficherMessageTemporaire("Sélection invalide ! Échange non adjacent.");
+                                allerA(0, 35);
+                                afficherMessageTemporaire("Mouvement impossible : Cases non adjacentes !");
                                 getch();
                             }
+                            // On réinitialise la sélection
                             selectX = -1; selectY = -1;
                         }
                         break;
@@ -236,44 +248,36 @@ int jouerNiveau(Partie* partie) {
             }
         }
 
-        // 3. Vérification Victoire / Défaite
+        // 3. VÉRIFICATION DES CONDITIONS DE FIN
         int victoire = verifierVictoire(partie);
 
         if (victoire) {
             if(!actionClavier) afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
-            Sleep(500); 
+            Sleep(500);
             partieEnCours = 0;
             resultatNiveau = 1;
         } else if (partie->coups_restants <= 0 || partie->temps_restant <= 0) {
+            // Défaite
             if(!actionClavier) afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
-            partie->vies--; 
+            partie->vies--;
             afficherDefaite();
-            
-            if (partie->vies > 0) {
-                if (partie->temps_restant <= 0) {
-                    allerA(0, 35); afficherMessageTemporaire("Temps ecoule ! Vous perdez une vie.");
-                } else {
-                    allerA(0, 35); afficherMessageTemporaire("Plus de coups ! Vous perdez une vie.");
-                }
-            } else {
-                 allerA(0, 35); afficherMessageTemporaire("GAME OVER FINAL !");
-            }
             getch();
             partieEnCours = 0;
             resultatNiveau = 0;
         }
 
-        // 4. Affichage
+        // 4. RAFRAÎCHISSEMENT DE L'ÉCRAN
+        // Si le temps a changé, on met à jour juste le timer (Optimisation)
         if (partieEnCours && !actionClavier && partie->temps_restant != tempsAffiche) {
             tempsAffiche = partie->temps_restant;
             rafraichirTimerSeulement(partie);
         }
-
+        // Si le joueur a bougé, on redessine tout
         if (actionClavier && partieEnCours) {
             afficherNiveauJeu(partie, curseurX, curseurY, selectX, selectY);
         }
 
-        Sleep(10); 
+        Sleep(10); // Petite pause pour ne pas surcharger le processeur
     }
     
     return resultatNiveau; 
