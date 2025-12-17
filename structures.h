@@ -10,7 +10,8 @@
 // Les fruits vont de 1 à 5.
 #define NB_TYPES_ITEMS 5
 #define ITEM_BOMBE 6    // Bonus qui explose
-#define ITEM_MUR 7      // Obstacle immobile
+#define ITEM_MUR 7     // Obstacle immobile
+#define ITEM_VIRUS 8
 
 // --- PARAMÈTRES GLOBAUX ---
 #define NB_VIES_INITIAL 3
