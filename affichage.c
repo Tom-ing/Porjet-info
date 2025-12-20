@@ -19,7 +19,6 @@ static const int COULEURS_ITEMS[] = {
 // === FONCTIONS UTILITAIRES WINDOWS ===
 // Source : Documentation Windows.h / Assistant IA
 // Permet de manipuler la console (Couleurs, Position du curseur).
-
 void changerCouleur(int couleur) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, couleur);
