@@ -35,7 +35,15 @@ void allerA(int x, int y) {
 void effacerEcran(void) {
     system("cls");
 }
+// Rôle : Cache le trait clignotant de la console pour faire plus "Jeu Vidéo"
+void masquerCurseur(void) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO infos;
 
+    GetConsoleCursorInfo(hConsole, &infos); // On récupère les infos actuelles
+    infos.bVisible = FALSE;                 // On met la visibilité à FAUX
+    SetConsoleCursorInfo(hConsole, &infos); // On applique
+}
 // === AFFICHAGE DES MENUS ===
 
 void afficherMenuPrincipal(void) {
@@ -153,7 +161,7 @@ void afficherNiveauJeu(Partie* partie, int curseurX, int curseurY, int selectX, 
     effacerEcran();
 
     // 1. Titre
-    changerCouleur(COULEUR_JAUNE);
+    changerCouleur(COULEUR_VERT);
     printf("╔════════════════════════════════════════════════════════════════════════════════════╗\n");
     printf("║                                ECE HEROES - NIVEAU %d                               ║\n", partie->niveau);
     printf("╚════════════════════════════════════════════════════════════════════════════════════╝\n\n");
@@ -442,6 +450,7 @@ void afficherUneCase(Partie* partie, int gridX, int gridY, int curseurX, int cur
     }
 
     changerCouleur(7); // Reset couleur
+    allerA(0, 0);
 }
 
 // === FONCTION DE SAISIE SÉCURISÉE ===
