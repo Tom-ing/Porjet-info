@@ -10,6 +10,8 @@
 #include "moteur.h"
 #include "sauvegarde.h"
 #include "menupause.h"
+#include "audio.h"
+#include "regles.h"
 
 // Prototypes locaux
 int jouerNiveau(Partie* partie);
@@ -63,76 +65,123 @@ int main() {
 // === GESTIONNAIRE DE JEU ===
 // Rôle : Gère l'enchaînement des niveaux (1 -> 2 -> 3) et la sauvegarde entre eux.
 // Entrée : La structure Partie (pointeur).
+// === GESTIONNAIRE DE JEU ===
 void lancerJeu(Partie* partie) {
     char pseudo[50];
 
-    // Tant que le joueur est vivant et n'a pas fini le jeu
+    // Lancement initial de la musique de fond
+    lancerMusique("musique.mp3");
+
+    // Boucle tant qu'on a des vies et qu'on n'a pas fini le jeu
     while (partie->vies > 0 && partie->niveau <= NB_NIVEAUX) {
 
-        // On lance la boucle de jeu temps réel pour ce niveau
         int resultat = jouerNiveau(partie);
 
-        // CAS 1 : VICTOIRE
+        // --- CAS 1 : VICTOIRE DU NIVEAU ---
         if (resultat == 1) {
-            if (partie->niveau < NB_NIVEAUX) {
-                afficherVictoire();
 
-                // Proposition de sauvegarde
+            // 1. Son et Message de Victoire
+            jouerJingle("victoire.mp3"); // Coupe la musique et lance le jingle
+
+            if (partie->niveau < NB_NIVEAUX) {
+                afficherVictoire(); // Affiche "GAGNÉ" ou ton ASCII victoire
+
+                // 2. On attend bien 4 secondes pour profiter de la musique
+                Sleep(4000);
+
+                // --- MENU DE SAUVEGARDE ---
                 effacerEcran();
                 changerCouleur(COULEUR_VERT);
                 printf("\n\n    NIVEAU %d REUSSI !", partie->niveau);
                 changerCouleur(COULEUR_JAUNE);
-                printf("\n\n    Voulez-vous sauvegarder ? (O/N) : ");
+                printf("\n\n    Voulez-vous sauvegarder la progression ? (O/N) : ");
 
-                char choix = getch();
+                // 3. IMPORTANT : On vide le buffer clavier avant de demander
+                // Sinon le dernier mouvement du jeu risque de valider ce menu tout seul !
+                while(kbhit()) getch();
+
+
+                char choix = getch(); // On attend la vraie réponse du joueur
+
                 if (choix == 'o' || choix == 'O') {
                     changerCouleur(COULEUR_CYAN);
-                    printf("\n    Entrez un pseudo : ");
+                    printf("\n    Entrez un pseudo pour la sauvegarde : ");
                     changerCouleur(COULEUR_BLANC);
                     saisirPseudo(pseudo, 50);
 
-                    // On sauvegarde la progression (Niveau suivant)
                     sauvegarderPartie(pseudo, partie->niveau + 1, partie->vies);
 
                     changerCouleur(COULEUR_VERT);
-                    printf("\n    Sauvegarde effectuée !");
-                    Sleep(1000);
+                    printf("\n    Sauvegarde effectuée avec succès !");
+                    Sleep(1500);
                 }
             }
 
-            // Passage au niveau suivant ou Fin du jeu
+            // Gestion Passage Niveau Suivant / Fin Jeu
             if (partie->niveau == NB_NIVEAUX) {
+                // C'est la fin totale du jeu
                 afficherEcranFinJeu();
+                Sleep(5000); // Temps pour la musique de fin
                 break;
             } else {
+                // On passe au niveau suivant
                 partie->niveau++;
                 effacerEcran();
                 changerCouleur(COULEUR_VERT);
-                printf("\n\n    PASSAGE AU NIVEAU %d\n", partie->niveau);
-                Sleep(1500);
+                printf("\n\n    CHARGEMENT DU NIVEAU %d...\n", partie->niveau);
+                Sleep(2000);
+
                 genererNiveau(partie, partie->niveau);
+
+                // 4. TRES IMPORTANT : On relance la musique de fond
+                lancerMusique("musique.mp3");
             }
         }
-        // CAS 2 : ABANDON (Touche Echap)
+
+        // --- CAS 2 : ABANDON (Via menu pause) ---
         else if (resultat == -1) {
-            break;
+            break; // On retourne au menu principal directement
         }
-        // CAS 3 : DÉFAITE
+
+        // --- CAS 3 : ECHEC DU NIVEAU ---
         else {
+            // Le joueur a perdu ce niveau. On regarde s'il lui reste des vies.
+
             if (partie->vies > 0) {
+
+                jouerJingle("gameover.mp3");
                 effacerEcran();
+                changerCouleur(COULEUR_ORANGE);
+                printf("\n\n    OUPS ! NIVEAU ECHOUE.");
                 changerCouleur(COULEUR_ROUGE);
-                printf("\n\n    IL VOUS RESTE %d VIES. RECOMMENCEZ !\n", partie->vies);
-                Sleep(2000);
+                printf("\n\n    IL VOUS RESTE %d VIES.", partie->vies);
+                printf("\n    Preparez-vous a recommencer...");
+
+                // On laisse 3 secondes pour entendre le son et lire
+                Sleep(3000);
+
                 genererNiveau(partie, partie->niveau); // On recommence le même niveau
-            } else {
-                effacerEcran();
-                changerCouleur(COULEUR_ROUGE);
-                printf("\n\n    GAME OVER FINAL\n");
-                Sleep(2000);
+
+                // On relance la musique de fond
+                lancerMusique("musique.mp3");
+            }
+            else {
+                // B) PLUS DE VIES -> VRAI GAME OVER (Dessin ASCII)
+                jouerJingle("gameover.mp3");
+
+                // C'est ici qu'on affiche le grand dessin ASCII final
+                afficherDefaite();
+
+                // On laisse 5 secondes pour bien voir l'écran et entendre la musique
+                Sleep(5000);
+
+                // Ensuite la boucle s'arrêtera car partie->vies == 0
             }
         }
     }
+
+    // Fin de la session de jeu, on coupe tout son
+    arreterMusique();
 }
 
 // === BOUCLE DE JEU (TEMPS RÉEL) ===
