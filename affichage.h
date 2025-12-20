@@ -19,9 +19,6 @@ void allerA(int x, int y);
 void effacerEcran(void);
 void masquerCurseur(void);
 
-// Affichage du menu et des écrans
-void afficherMenuPrincipal(void);
-
 // Affichage du jeu
 void afficherNiveauJeu(Partie* partie, int curseurX, int curseurY, int selectX, int selectY);
 
