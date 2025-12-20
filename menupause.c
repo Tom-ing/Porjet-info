@@ -18,13 +18,13 @@ static void afficherDesignMenuPause(void) {
     printf("    ╚════════════════════════════════════════════╝\n\n");
 
     changerCouleur(COULEUR_BLANC);
-    printf("      1. "); changerCouleur(COULEUR_VERT); printf("Reprendre la partie\n\n");
+    printf("      1. "); changerCouleur(COULEUR_BLANC); printf("Reprendre la partie\n\n");
     
     changerCouleur(COULEUR_BLANC);
-    printf("      2. "); changerCouleur(COULEUR_CYAN); printf("Sauvegarder et Quitter\n\n");
+    printf("      2. "); changerCouleur(COULEUR_BLANC); printf("Sauvegarder et Quitter\n\n");
     
     changerCouleur(COULEUR_BLANC);
-    printf("      3. "); changerCouleur(COULEUR_ROUGE); printf("Abandonner (Menu Principal)\n\n");
+    printf("      3. "); changerCouleur(COULEUR_BLANC); printf("Abandonner (Menu Principal)\n\n");
 
     changerCouleur(COULEUR_JAUNE);
     printf("    >> Votre choix : ");
