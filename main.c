@@ -23,6 +23,7 @@ int main() {
     char pseudo[50];
 
     system("chcp 65001 > nul");
+    masquerCurseur();
 
     while (continuer) {
         afficherMenuPrincipal();
